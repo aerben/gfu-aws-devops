@@ -1,0 +1,25 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: CloudFormation S3 Bucket with Lifecycle Configuration
+
+Parameters:
+  s3BucketName:
+    Description: Name of the S3 bucket
+    Type: String
+
+Resources:
+  MyS3Bucket:
+    Type: 'AWS::S3::Bucket'
+    Properties:
+      BucketName: !Ref s3BucketName
+      LifecycleConfiguration:
+        Rules:
+          - Id: DeleteAfter30Days
+            Status: 'Enabled'
+            ExpirationInDays: 30
+
+Outputs:
+  S3BucketARN:
+    Description: ARN des S3 Buckets
+    Value: !GetAtt MyS3Bucket.Arn
+    Export:
+      Name: S3BucketARN

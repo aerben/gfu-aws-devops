@@ -1,0 +1,11 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: EC2 Instance without anything else
+
+Resources:
+
+  SimpleEC2Instance:
+    Type: AWS::EC2::Instance
+    Properties:
+      ImageId: ami-098c93bd9d119c051
+      InstanceType: t2.micro
+      KeyName: 168399S0

@@ -1,0 +1,47 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: EC2 Instance without anything else
+
+Parameters:
+  KeyName:
+    Description: The name of the key pair to use
+    Type: AWS::EC2::KeyPair::KeyName
+
+Resources:
+
+  SimpleEC2Instance:
+    Type: AWS::EC2::Instance
+    Properties:
+      ImageId: ami-098c93bd9d119c051
+      InstanceType: t2.micro
+      KeyName: !Ref KeyName
+      AvailabilityZone: eu-central-1a
+      UserData:
+        Fn::Base64:
+          !Sub |
+          #!/bin/bash
+          sudo yum update -y
+          sudo yum install -y nginx
+          # TODO Nginx is not started. Log into the instance, check cfn logs, and start nginx during presentation
+      SecurityGroups:
+        - !Ref InstanceSecurityGroup
+
+  InstanceSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Enables SSH access and allows traffic on Port 80
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 22
+          ToPort: 22
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
+          FromPort: 80
+          ToPort: 80
+          CidrIp: 0.0.0.0/0
+
+Outputs:
+  InstancePublicDnsName:
+    Description: Public DNS Name of the Instance
+    Value: !GetAtt SimpleEC2Instance.PublicDnsName
+    Export:
+      Name: InstancePublicDnsName

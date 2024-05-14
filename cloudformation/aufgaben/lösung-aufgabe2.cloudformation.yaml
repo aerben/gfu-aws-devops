@@ -1,0 +1,25 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: CloudFormation SQS Queue
+
+Parameters:
+  queueName:
+    Description: Name of the SQS Queue
+    Type: String
+
+Resources:
+  MySQSQueue:
+    Type: 'AWS::SQS::Queue'
+    Properties:
+      QueueName: !Ref queueName
+
+Outputs:
+  MyQueueURL:
+    Description: URL der SQS Queue
+    Value: !Ref MySQSQueue
+    Export:
+      Name: MyQueueURL
+
+###
+# aws cloudformation list-exports --query "Exports[?Name=='MyQueueURL'].Value" --output text
+# aws sqs send-message --queue-url $(aws cloudformation list-exports --query "Exports[?Name=='MyQueueURL'].Value" --output text) --message-body "Hello, World!"
+###

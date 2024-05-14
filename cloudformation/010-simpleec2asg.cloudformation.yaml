@@ -1,0 +1,62 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: Auto Scaling Group with EC2 Instance
+
+Parameters:
+  SSHKeyPair:
+    Description: Name of an existing EC2 KeyPair to enable SSH access to the instance
+    Type: AWS::EC2::KeyPair::KeyName
+  Subnet1:
+    Description: Subnet ID for the instance
+    Type: AWS::EC2::Subnet::Id
+  Subnet2:
+    Description: Subnet ID for the instance
+    Type: AWS::EC2::Subnet::Id
+  Subnet3:
+    Description: Subnet ID for the instance
+    Type: AWS::EC2::Subnet::Id
+
+Resources:
+
+  # Security Group
+  InstanceSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Enables SSH access
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 22
+          ToPort: 22
+          CidrIp: 0.0.0.0/0
+
+  # Launch Template
+  InstanceLaunchTemplate:
+    Type: AWS::EC2::LaunchTemplate
+    Properties:
+      LaunchTemplateData:
+        ImageId: ami-098c93bd9d119c051
+        InstanceType: t2.micro
+        KeyName: !Ref SSHKeyPair
+        SecurityGroupIds:
+          - !GetAtt InstanceSecurityGroup.GroupId
+
+  # Auto Scaling Group
+  AutoScalingGroup:
+    Type: AWS::AutoScaling::AutoScalingGroup
+    Properties:
+      MinSize: '1'
+      MaxSize: '1'
+      DesiredCapacity: '1'
+      VPCZoneIdentifier:
+        - !Ref Subnet1
+        - !Ref Subnet2
+        - !Ref Subnet3
+      LaunchTemplate:
+        LaunchTemplateId: !Ref InstanceLaunchTemplate
+        Version: !GetAtt InstanceLaunchTemplate.LatestVersionNumber
+      HealthCheckType: EC2
+      HealthCheckGracePeriod: 300
+
+Outputs:
+  AutoScalingGroupName:
+    Description: The name of the Auto Scaling group
+    Value: !Ref AutoScalingGroup
