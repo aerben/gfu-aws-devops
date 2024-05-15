@@ -43,20 +43,39 @@ Resources:
         UserData:
           Fn::Base64:
             !Sub |
-              #!/bin/bash
-              echo "Starting"
-              sudo yum update -y
-              sudo yum install -y nginx
-              sudo systemctl start nginx
+            #!/bin/bash
+            yum update -y
+            yum install -y aws-cfn-bootstrap
+            /opt/aws/bin/cfn-init -v --stack ${AWS::StackName} --resource AutoScalingGroup --region ${AWS::Region}
+            /opt/aws/bin/cfn-signal -e $? --stack ${AWS::StackName} --resource AutoScalingGroup --region ${AWS::Region}
+            systemctl start nginx
+
         SecurityGroupIds:
           - !GetAtt InstanceSecurityGroup.GroupId
 
   # Auto Scaling Group
   AutoScalingGroup:
     Type: AWS::AutoScaling::AutoScalingGroup
+    UpdatePolicy:
+      AutoScalingRollingUpdate:
+        MinInstancesInService: 1
+        MaxBatchSize: 1
+        PauseTime: PT5M
+        WaitOnResourceSignals: true
+    Metadata:
+      AWS::CloudFormation::Init:
+        config:
+          packages:
+            yum:
+              nginx: [ ]
+          services:
+            sysvinit:
+              nginx:
+                enabled: true
+                ensureRunning: true
     Properties:
       MinSize: '1'
-      MaxSize: '1'
+      MaxSize: '2'
       DesiredCapacity: '1'
       VPCZoneIdentifier:
         - !Ref Subnet1
@@ -67,6 +86,7 @@ Resources:
         Version: !GetAtt InstanceLaunchTemplate.LatestVersionNumber
       HealthCheckType: EC2
       HealthCheckGracePeriod: 300
+
       Tags:
         - Key: Name
           Value: 010-simpleec2asg-instance

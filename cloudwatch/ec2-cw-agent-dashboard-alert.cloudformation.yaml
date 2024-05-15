@@ -1,0 +1,76 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Parameters:
+  SSHKeyPair:
+    Description: Name of an existing EC2 KeyPair to enable SSH access to the instance
+    Type: AWS::EC2::KeyPair::KeyName
+Resources:
+  EC2Instance:
+    Type: 'AWS::EC2::Instance'
+    Properties:
+      InstanceType: 't2.micro'
+      ImageId: 'ami-098c93bd9d119c051'
+      KeyName: !Ref SSHKeyPair
+      Monitoring: true
+      IamInstanceProfile: !Ref EC2InstanceProfile
+      SecurityGroups: [ !Ref InstanceSecurityGroup ]
+  InstanceSecurityGroup:
+    Type: 'AWS::EC2::SecurityGroup'
+    Properties:
+      GroupDescription: 'Enable SSH access via port 22'
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: '22'
+          ToPort: '22'
+          CidrIp: '0.0.0.0/0'
+
+  EC2InstanceProfile:
+    Type: 'AWS::IAM::InstanceProfile'
+    Properties:
+      Roles: [ !Ref EC2Role ]
+
+  EC2Role:
+    Type: 'AWS::IAM::Role'
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: [ec2.amazonaws.com]
+            Action: ['sts:AssumeRole']
+      Path: '/'
+      Policies:
+        - PolicyName: 'EC2CloudWatchPolicy'
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - 'cloudwatch:PutMetricData'
+                  - 'logs:PutLogEvents'
+                  - 'logs:CreateLogStream'
+                  - 'logs:CreateLogGroup'
+                Resource: '*'
+
+  CPUAlarm:
+    Type: 'AWS::CloudWatch::Alarm'
+    Properties:
+      AlarmDescription: 'Alarm if CPU usage exceeds 50%'
+      MetricName: 'CPUUtilization'
+      Namespace: 'AWS/EC2'
+      Statistic: 'Average'
+      Period: '60'
+      EvaluationPeriods: '1'
+      Threshold: '50'
+      ComparisonOperator: 'GreaterThanThreshold'
+      AlarmActions: [ !Ref AlarmTopic ]
+      Dimensions:
+        - Name: 'InstanceId'
+          Value: !Ref EC2Instance
+
+  AlarmTopic:
+    Type: 'AWS::SNS::Topic'
+    Properties:
+      Subscription:
+        - Endpoint: 'info@it-erben.com'
+          Protocol: 'email'

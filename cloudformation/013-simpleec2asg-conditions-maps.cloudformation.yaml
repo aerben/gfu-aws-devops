@@ -1,0 +1,203 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: Auto Scaling Group with EC2 Instance and Conditional Application Load Balancer
+
+Parameters:
+  SSHKeyPair:
+    Description: Name of an existing EC2 KeyPair to enable SSH access to the instance
+    Type: AWS::EC2::KeyPair::KeyName
+  Subnet1:
+    Description: Subnet ID for the instance
+    Type: AWS::EC2::Subnet::Id
+  Subnet2:
+    Description: Subnet ID for the instance
+    Type: AWS::EC2::Subnet::Id
+  Subnet3:
+    Description: Subnet ID for the instance
+    Type: AWS::EC2::Subnet::Id
+  VpcId:
+    Description: The VPC ID where the resources will be deployed
+    Type: AWS::EC2::VPC::Id
+  MinSize:
+    Description: Minimum number of instances in the Auto Scaling Group
+    Type: Number
+    Default: 1
+    MinValue: 1
+  MaxSize:
+    Description: Maximum number of instances in the Auto Scaling Group
+    Type: Number
+    Default: 3
+    MinValue: 2
+  CreateALB:
+    Description: Whether to create an Application Load Balancer
+    Type: String
+    Default: true
+    AllowedValues:
+      - true
+      - false
+
+Mappings:
+  RegionMap:
+    eu-central-1:
+      AMI: ami-098c93bd9d119c051
+    us-east-1:
+      AMI: ami-0c55b159cbfafe1f0
+    us-west-1:
+      AMI: ami-0bdb828fd58c52235
+    us-west-2:
+      AMI: ami-07ebfd5b3428b6f4d
+
+Conditions:
+  CreateALBCondition: !Equals [!Ref CreateALB, "true"]
+
+Resources:
+
+  # Security Group for EC2 Instances
+  InstanceSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Enables SSH access and HTTP access
+      VpcId: !Ref VpcId
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 22
+          ToPort: 22
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
+          FromPort: 80
+          ToPort: 80
+          CidrIp: 0.0.0.0/0
+
+  # Security Group for ALB
+  LoadBalancerSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Condition: CreateALBCondition
+    Properties:
+      GroupDescription: Security group for ALB
+      VpcId: !Ref VpcId
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 80
+          ToPort: 80
+          CidrIp: 0.0.0.0/0
+
+  # Application Load Balancer
+  ApplicationLoadBalancer:
+    Type: AWS::ElasticLoadBalancingV2::LoadBalancer
+    Condition: CreateALBCondition
+    Properties:
+      Name: MyApplicationLoadBalancer
+      Subnets:
+        - !Ref Subnet1
+        - !Ref Subnet2
+        - !Ref Subnet3
+      SecurityGroups:
+        - !Ref LoadBalancerSecurityGroup
+      Scheme: internet-facing
+      LoadBalancerAttributes:
+        - Key: idle_timeout.timeout_seconds
+          Value: '60'
+
+  # ALB Listener
+  ALBListener:
+    Type: AWS::ElasticLoadBalancingV2::Listener
+    Condition: CreateALBCondition
+    Properties:
+      LoadBalancerArn: !Ref ApplicationLoadBalancer
+      Protocol: HTTP
+      Port: 80
+      DefaultActions:
+        - Type: forward
+          TargetGroupArn: !Ref TargetGroup
+
+  # Target Group
+  TargetGroup:
+    Type: AWS::ElasticLoadBalancingV2::TargetGroup
+    Condition: CreateALBCondition
+    Properties:
+      Name: MyTargetGroup
+      VpcId: !Ref VpcId
+      Port: 80
+      Protocol: HTTP
+      TargetType: instance
+      HealthCheckProtocol: HTTP
+      HealthCheckPort: '80'
+      HealthCheckPath: /
+      HealthCheckIntervalSeconds: 30
+      HealthCheckTimeoutSeconds: 5
+      HealthyThresholdCount: 5
+      UnhealthyThresholdCount: 2
+
+  # Launch Template
+  InstanceLaunchTemplate:
+    Type: AWS::EC2::LaunchTemplate
+    Properties:
+      LaunchTemplateData:
+        ImageId: !FindInMap [RegionMap, !Ref "AWS::Region", AMI]
+        InstanceType: t2.micro
+        KeyName: !Ref SSHKeyPair
+        UserData:
+          Fn::Base64:
+            !Sub |
+            #!/bin/bash
+            yum update -y
+            yum install -y aws-cfn-bootstrap nginx
+            /opt/aws/bin/cfn-init -v --stack ${AWS::StackName} --resource AutoScalingGroup --region ${AWS::Region}
+            /opt/aws/bin/cfn-signal -e $? --stack ${AWS::StackName} --resource AutoScalingGroup --region ${AWS::Region}
+            systemctl start nginx
+        SecurityGroupIds:
+          - !GetAtt InstanceSecurityGroup.GroupId
+
+  # Auto Scaling Group
+  AutoScalingGroup:
+    Type: AWS::AutoScaling::AutoScalingGroup
+    Metadata:
+      AWS::CloudFormation::Init:
+        config:
+          packages:
+            yum:
+              nginx: []
+          services:
+            sysvinit:
+              nginx:
+                enabled: true
+                ensureRunning: true
+    Properties:
+      MinSize: !Ref MinSize
+      MaxSize: !Ref MaxSize
+      DesiredCapacity: !Ref MinSize
+      VPCZoneIdentifier:
+        - !Ref Subnet1
+        - !Ref Subnet2
+        - !Ref Subnet3
+      LaunchTemplate:
+        LaunchTemplateId: !Ref InstanceLaunchTemplate
+        Version: !GetAtt InstanceLaunchTemplate.LatestVersionNumber
+      HealthCheckType: EC2
+      HealthCheckGracePeriod: 300
+      TargetGroupARNs:
+        - !If
+          - CreateALBCondition
+          - !Ref TargetGroup
+          - !Ref "AWS::NoValue"
+      Tags:
+        - Key: Name
+          Value: MyEC2Instance
+          PropagateAtLaunch: true
+    UpdatePolicy:
+      AutoScalingRollingUpdate:
+        MinInstancesInService: 1
+        MaxBatchSize: 1
+        PauseTime: PT5M
+        WaitOnResourceSignals: true
+
+Outputs:
+  AutoScalingGroupName:
+    Description: The name of the Auto Scaling group
+    Value: !Ref AutoScalingGroup
+
+  LoadBalancerDNSName:
+    Description: The DNS name of the load balancer
+    Value: !If
+      - CreateALBCondition
+      - !GetAtt ApplicationLoadBalancer.DNSName
+      - "none"
