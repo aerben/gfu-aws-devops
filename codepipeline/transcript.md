@@ -12,7 +12,7 @@
 ## Schritt 2: Amazon EC2 Linux-Instances erstellen und den CodeDeploy Agenten installieren
 
 1. Öffnen Sie die IAM-Konsole und erstellen Sie eine neue Rolle mit den Richtlinien `AmazonEC2RoleforAWSCodeDeploy` und `AmazonSSMManagedInstanceCore`.
-2. Öffnen Sie die EC2-Konsole und starten Sie zwei neue Linux-Instances.
+2. Öffnen Sie die EC2-Konsole und starten Sie eine neue Linux-Instanz.
 3. Wählen Sie eine Amazon Linux 2-AMI und den Instance-Typ `t2.micro`.
 4. Erstellen Sie ein neues Schlüsselpaar oder verwenden Sie ein vorhandenes.
 5. Konfigurieren Sie die Sicherheitsgruppen, um SSH- und HTTP-Zugriff zu ermöglichen.
@@ -27,13 +27,25 @@
     sudo ./install auto
     sudo service codedeploy-agent start
     ```
-    Alternativ können Sie dieses Skript als UserData hinterlegen. In diesem Fall sollten Sie dennoch per SSH auf der Maschine prüfen, ob die Installation funktioniert hat.
-    Die Logs hierfür liegen in folgenden Dateien: /var/log/cloud-init.log und /var/log/cloud-init-output.log
 
 ## Erstellen Sie eine Anwendung in CodeDeploy
 
 1. Navigieren Sie zu **CodeDeploy** in der AWS Management Console.
-2. Klicken Sie auf **Create application** und wählen Sie **Compute platform** -> **Lambda**.
+2. Klicken Sie auf **Create application** und wählen Sie **Compute platform** -> **EC2**.
 3. Geben Sie der Anwendung einen Namen, z.B. `my-codedeploy-application`.
 4. Klicken Sie auf **Create application**.
-5. Erstellen Sie zwei Deployment Groups (Staging und Production)
+5. Erstellen Sie eine Deployment Group (Staging) mit Typ EC2, welche auf die EC2-Instanz von oben zeigt
+
+## Pipeline erstellen
+
+1. Beginnen Sie mit der Erstellung einer Pipeline
+2. Wählen Sie S3 als Source Provider mit dem Bucket und Object Key, den Sie oben angelegt haben
+3. Überspringen Sie die Build Stage
+4. Wählen Sie als Provider "CodeDeploy" und als Gruppe "staging"
+
+Danach sollte die Pipeline laufen.
+
+Zur Demonstration können Sie danach einen manuellen Approval und eine production-Stage hinzufügen.
+
+Logs für den CodeDeploy-Agent:
+`less /var/log/aws/codedeploy-agent/codedeploy-agent.log`

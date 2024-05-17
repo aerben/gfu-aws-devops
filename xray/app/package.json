@@ -1,0 +1,14 @@
+{
+  "type": "module",
+  "name": "lambda-xray-s3-demo",
+  "version": "1.0.0",
+  "description": "AWS Lambda function to demonstrate tracing S3 headObject operations using AWS X-Ray",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "dependencies": {
+    "@aws-sdk/client-s3": "^3.0.0",
+    "aws-xray-sdk-core": "^3.3.3"
+  }
+}
