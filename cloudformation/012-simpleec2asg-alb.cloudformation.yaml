@@ -116,9 +116,10 @@ Resources:
             #!/bin/bash
             yum update -y
             yum install -y aws-cfn-bootstrap nginx
+            systemctl start nginx
             /opt/aws/bin/cfn-init -v --stack ${AWS::StackName} --resource AutoScalingGroup --region ${AWS::Region}
             /opt/aws/bin/cfn-signal -e $? --stack ${AWS::StackName} --resource AutoScalingGroup --region ${AWS::Region}
-            systemctl start nginx
+            # Logging Agent aktivieren
         SecurityGroupIds:
           - !GetAtt InstanceSecurityGroup.GroupId
 

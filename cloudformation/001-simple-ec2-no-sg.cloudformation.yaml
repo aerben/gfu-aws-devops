@@ -8,4 +8,4 @@ Resources:
     Properties:
       ImageId: ami-098c93bd9d119c051
       InstanceType: t2.micro
-      KeyName: 168399S0
+      KeyName: instructor-keypair

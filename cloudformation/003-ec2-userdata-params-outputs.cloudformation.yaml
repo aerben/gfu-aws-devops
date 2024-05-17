@@ -14,14 +14,13 @@ Resources:
       ImageId: ami-098c93bd9d119c051
       InstanceType: t2.micro
       KeyName: !Ref KeyName
-      AvailabilityZone: eu-central-1a
       UserData:
         Fn::Base64:
           !Sub |
           #!/bin/bash
           sudo yum update -y
           sudo yum install -y nginx
-          # TODO Nginx is not started. Log into the instance, check cfn logs, and start nginx during presentation
+          sudo systemctl start nginx
       SecurityGroups:
         - !Ref InstanceSecurityGroup
 

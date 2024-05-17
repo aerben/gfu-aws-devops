@@ -8,8 +8,7 @@ Resources:
     Properties:
       ImageId: ami-098c93bd9d119c051
       InstanceType: t2.micro
-      KeyName: key-037c22ace9759ceee
-      AvailabilityZone: eu-central-1a
+      KeyName: instructor-keypair
       SecurityGroups:
         - !Ref InstanceSecurityGroup
 
@@ -21,4 +20,8 @@ Resources:
         - IpProtocol: tcp
           FromPort: 22
           ToPort: 22
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
+          FromPort: 80
+          ToPort: 80
           CidrIp: 0.0.0.0/0

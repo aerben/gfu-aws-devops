@@ -23,6 +23,7 @@ export const handler = async (event) => {
 };
 ```
 Denken Sie daran, den Deploy-Knopf zu drücken!
+- Klicken Sie auf "Test" und direkt auf "Invoke"
 
 - Gehen Sie in die Alarms-Ansicht von CloudWatch und klicken Sie "Create Alarm"
 - Klicken Sie auf "Select Metric"
@@ -30,6 +31,8 @@ Denken Sie daran, den Deploy-Knopf zu drücken!
 - Wählen Sie die "Error"-Metrik der Lambda-Funktion "error-function" und klicken Sie auf "Select Metric"
 
 ![img.png](pictures/metric-selector.png)
+TODO Greater Than 0
+
 
 - Wählen Sie als Statistik "Sum" und als Threshold "Greater than 0"
 - Die Alarmperiode sollte 1 Minute betragen. Je länger sie ist, desto länger müssen Sie auf einen Alarm warten.

@@ -37,6 +37,8 @@ Parameters:
 
 Mappings:
   RegionMap:
+    ap-southeast-1:
+      AMI: ami-0ac9397cab55f5044
     eu-central-1:
       AMI: ami-098c93bd9d119c051
     us-east-1:

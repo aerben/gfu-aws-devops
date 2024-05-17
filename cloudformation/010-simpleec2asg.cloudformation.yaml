@@ -14,6 +14,8 @@ Parameters:
   Subnet3:
     Description: Subnet ID for the instance
     Type: AWS::EC2::Subnet::Id
+  MinSize:
+    Type: Number
 
 Resources:
 
@@ -56,7 +58,7 @@ Resources:
     Type: AWS::AutoScaling::AutoScalingGroup
     Properties:
       MinSize: '1'
-      MaxSize: '1'
+      MaxSize: '10'
       DesiredCapacity: '1'
       VPCZoneIdentifier:
         - !Ref Subnet1

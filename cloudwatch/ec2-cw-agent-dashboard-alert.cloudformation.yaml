@@ -56,12 +56,12 @@ Resources:
     Type: 'AWS::CloudWatch::Alarm'
     Properties:
       AlarmDescription: 'Alarm if CPU usage exceeds 50%'
-      MetricName: 'CPUUtilization'
-      Namespace: 'AWS/EC2'
-      Statistic: 'Average'
+      MetricName: 'Errors'
+      Namespace: 'AWS/Lambda'
+      Statistic: 'Sum'
       Period: '60'
       EvaluationPeriods: '1'
-      Threshold: '50'
+      Threshold: '0'
       ComparisonOperator: 'GreaterThanThreshold'
       AlarmActions: [ !Ref AlarmTopic ]
       Dimensions:

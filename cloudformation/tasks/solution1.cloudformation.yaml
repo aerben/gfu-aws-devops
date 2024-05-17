@@ -15,7 +15,7 @@ Resources:
         Rules:
           - Id: DeleteAfter30Days
             Status: 'Enabled'
-            ExpirationInDays: 30
+            ExpirationInDays: 60
 
 Outputs:
   S3BucketARN:
